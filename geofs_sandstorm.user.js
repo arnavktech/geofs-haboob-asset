@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GeoFS Cinematic Sandstorm Disaster System
 // @namespace    https://geo-fs.com/
-// @version      8.0.0
-// @description  Natural desert sandstorm with earthy sand color grading, smooth sand rain, no flashing, persistent locked UI shaking, and 3D GLB horizon engine
+// @version      9.0.0
+// @description  Dark high-contrast Top Gun Maverick cinematic sandstorm with subtle warm tint, refined canopy physics, minimal grain, and persistent locked airframe vibration
 // @match        https://www.geo-fs.com/geofs.php*
 // @run-at       document-end
 // @grant        none
@@ -21,9 +21,9 @@
             baseWind: 20.0,
             gustWind: 28.0,
             visMeters: 2800.0,
-            fogDensity: 0.0015,
+            fogDensity: 0.0018,
             turbulenceLoad: 0.45,
-            sandRainDensity: 0.25,
+            sandRainDensity: 0.22,
             waterIntensity: 0.15,
             shakeScale: 2.2
         },
@@ -32,10 +32,10 @@
             baseWind: 29.0,
             gustWind: 40.0,
             visMeters: 1400.0,
-            fogDensity: 0.0035,
+            fogDensity: 0.0042,
             turbulenceLoad: 0.85,
-            sandRainDensity: 0.50,
-            waterIntensity: 0.40,
+            sandRainDensity: 0.45,
+            waterIntensity: 0.38,
             shakeScale: 4.2
         },
         {
@@ -43,10 +43,10 @@
             baseWind: 45.0,
             gustWind: 65.0,
             visMeters: 550.0,
-            fogDensity: 0.0068,
+            fogDensity: 0.0078,
             turbulenceLoad: 1.25,
-            sandRainDensity: 0.75,
-            waterIntensity: 0.70,
+            sandRainDensity: 0.70,
+            waterIntensity: 0.65,
             shakeScale: 6.5
         },
         {
@@ -54,10 +54,10 @@
             baseWind: 70.0,
             gustWind: 95.0,
             visMeters: 200.0,
-            fogDensity: 0.0105,
+            fogDensity: 0.0125,
             turbulenceLoad: 1.75,
-            sandRainDensity: 0.92,
-            waterIntensity: 0.90,
+            sandRainDensity: 0.88,
+            waterIntensity: 0.85,
             shakeScale: 9.0
         },
         {
@@ -65,7 +65,7 @@
             baseWind: 105.0,
             gustWind: 145.0,
             visMeters: 60.0,
-            fogDensity: 0.0165,
+            fogDensity: 0.0185,
             turbulenceLoad: 2.45,
             sandRainDensity: 1.0,
             waterIntensity: 1.0,
@@ -83,7 +83,6 @@
         distance: 0,
         startTime: 0,
         lastUpdateTime: 0,
-        sandAccumulation: 0,
         cinematicBars: false,
         hudVisible: true,
         customResource: null,
@@ -102,7 +101,7 @@
     var letterboxTop = null;
     var letterboxBottom = null;
 
-    var SAND_COUNT = 1500;
+    var SAND_COUNT = 1350;
     var sandX = new Float32Array(SAND_COUNT);
     var sandY = new Float32Array(SAND_COUNT);
     var sandZ = new Float32Array(SAND_COUNT);
@@ -111,12 +110,11 @@
     var sandLife = new Float32Array(SAND_COUNT);
     var sandMaxLife = new Float32Array(SAND_COUNT);
 
-    var SAND_RAIN_COUNT = 500;
+    var SAND_RAIN_COUNT = 450;
     var rainX = new Float32Array(SAND_RAIN_COUNT);
     var rainY = new Float32Array(SAND_RAIN_COUNT);
     var rainLen = new Float32Array(SAND_RAIN_COUNT);
     var rainSpeed = new Float32Array(SAND_RAIN_COUNT);
-    var rainAlpha = new Float32Array(SAND_RAIN_COUNT);
     var rainWidth = new Float32Array(SAND_RAIN_COUNT);
 
     var WATER_COUNT = 240;
@@ -198,52 +196,39 @@
 
     function injectStyles() {
         var style = document.createElement('style');
-        style.id = 'geofs-haboob-dune-styles';
+        style.id = 'geofs-haboob-maverick-styles';
         style.textContent =
             '#geofs-storm-hud {' +
             '    position: fixed;' +
             '    top: 24px;' +
             '    right: 24px;' +
-            '    width: 340px;' +
-            '    background: #110e0b;' +
-            '    border: 1px solid #382718;' +
-            '    box-shadow: 0 20px 60px rgba(0,0,0,0.95);' +
+            '    width: 330px;' +
+            '    background: #090909;' +
+            '    border: 1px solid #222222;' +
+            '    box-shadow: 0 24px 64px rgba(0,0,0,0.96);' +
             '    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;' +
-            '    color: #cbb89e;' +
+            '    color: #b0b0b0;' +
             '    font-size: 11px;' +
-            '    letter-spacing: 0.05em;' +
+            '    letter-spacing: 0.06em;' +
             '    z-index: 100000;' +
             '    user-select: none;' +
-            '    border-radius: 4px;' +
-            '    will-change: transform, box-shadow, border-color;' +
+            '    border-radius: 2px;' +
+            '    will-change: transform;' +
             '    transition: opacity 0.25s ease;' +
-            '    overflow: hidden;' +
-            '}' +
-            '#geofs-storm-hud::after {' +
-            '    content: "";' +
-            '    position: absolute;' +
-            '    top: 0; left: 0; right: 0; bottom: 0;' +
-            '    pointer-events: none;' +
-            '    background: radial-gradient(circle at 80% 20%, rgba(205, 138, 52, 0.12), transparent 70%);' +
-            '    opacity: 0;' +
-            '    transition: opacity 0.4s ease;' +
-            '}' +
-            '#geofs-storm-hud.sand-coated::after {' +
-            '    opacity: 1;' +
             '}' +
             '#geofs-storm-bar {' +
-            '    background: #18120e;' +
-            '    padding: 12px 16px;' +
-            '    border-bottom: 1px solid #2d1d11;' +
+            '    background: #111111;' +
+            '    padding: 11px 16px;' +
+            '    border-bottom: 1px solid #1c1c1c;' +
             '    cursor: move;' +
             '    display: flex;' +
             '    justify-content: space-between;' +
             '    align-items: center;' +
             '    font-weight: 700;' +
             '    text-transform: uppercase;' +
-            '    color: #eed6b7;' +
+            '    color: #e2e2e2;' +
             '    font-size: 10px;' +
-            '    letter-spacing: 0.1em;' +
+            '    letter-spacing: 0.12em;' +
             '}' +
             '#geofs-storm-core {' +
             '    padding: 14px 16px;' +
@@ -255,9 +240,9 @@
             '    margin-bottom: 12px;' +
             '}' +
             '.storm-tier-btn {' +
-            '    background: #19130d;' +
-            '    border: 1px solid #302114;' +
-            '    color: #856f5a;' +
+            '    background: #121212;' +
+            '    border: 1px solid #222222;' +
+            '    color: #6a6a6a;' +
             '    padding: 6px 0;' +
             '    font-size: 9px;' +
             '    font-weight: 700;' +
@@ -266,15 +251,14 @@
             '    transition: all 0.15s ease;' +
             '}' +
             '.storm-tier-btn:hover {' +
-            '    background: #251b11;' +
-            '    border-color: #5c3c23;' +
-            '    color: #ecc49a;' +
+            '    background: #1c1c1c;' +
+            '    border-color: #444444;' +
+            '    color: #d4d4d4;' +
             '}' +
             '.storm-tier-btn.active {' +
-            '    background: #3d230f;' +
-            '    border-color: #c47625;' +
-            '    color: #ffb85d;' +
-            '    box-shadow: 0 0 10px rgba(196, 118, 37, 0.35);' +
+            '    background: #20170e;' +
+            '    border-color: #8c5825;' +
+            '    color: #e59d4c;' +
             '}' +
             '.storm-row {' +
             '    display: flex;' +
@@ -283,12 +267,12 @@
             '    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;' +
             '}' +
             '.storm-tag {' +
-            '    color: #7b644f;' +
+            '    color: #555555;' +
             '    font-size: 10px;' +
             '    text-transform: uppercase;' +
             '}' +
             '.storm-data {' +
-            '    color: #edd3b4;' +
+            '    color: #d6d6d6;' +
             '    font-weight: 600;' +
             '}' +
             '#geofs-storm-btns {' +
@@ -298,9 +282,9 @@
             '    margin-top: 14px;' +
             '}' +
             '.storm-action {' +
-            '    background: #1a130e;' +
-            '    border: 1px solid #362214;' +
-            '    color: #9c846e;' +
+            '    background: #121212;' +
+            '    border: 1px solid #242424;' +
+            '    color: #888888;' +
             '    padding: 9px 0;' +
             '    font-size: 10px;' +
             '    font-weight: 700;' +
@@ -310,26 +294,25 @@
             '    transition: all 0.15s ease;' +
             '}' +
             '.storm-action:hover {' +
-            '    background: #281a10;' +
-            '    border-color: #58371f;' +
+            '    background: #1c1c1c;' +
+            '    border-color: #383838;' +
             '    color: #ffffff;' +
             '}' +
             '#storm-btn-run.active {' +
-            '    background: #391c07;' +
-            '    border-color: #ba6017;' +
-            '    color: #ffa138;' +
-            '    box-shadow: 0 0 14px rgba(186, 96, 23, 0.35);' +
+            '    background: #251609;' +
+            '    border-color: #8a4e1a;' +
+            '    color: #efa552;' +
             '}' +
             '#storm-btn-cine.active {' +
-            '    background: #201914;' +
-            '    border-color: #4f3b2a;' +
-            '    color: #d1b496;' +
+            '    background: #16181f;' +
+            '    border-color: #3b4259;' +
+            '    color: #b0bcde;' +
             '}' +
             '#storm-btn-import {' +
             '    grid-column: span 2;' +
-            '    background: #140f0c;' +
-            '    border: 1px dashed #3a2516;' +
-            '    color: #826e5b;' +
+            '    background: #0f0f0f;' +
+            '    border: 1px dashed #262626;' +
+            '    color: #666666;' +
             '    padding: 7px 0;' +
             '    font-size: 9px;' +
             '    font-weight: 600;' +
@@ -338,9 +321,9 @@
             '    margin-top: 4px;' +
             '}' +
             '#storm-btn-import:hover {' +
-            '    background: #201610;' +
-            '    border-color: #6b4324;' +
-            '    color: #d3b699;' +
+            '    background: #171717;' +
+            '    border-color: #404040;' +
+            '    color: #999999;' +
             '}' +
             '#geofs-storm-viewport {' +
             '    position: fixed;' +
@@ -391,8 +374,8 @@
         hud.id = 'geofs-storm-hud';
         hud.innerHTML =
             '<div id="geofs-storm-bar">' +
-            '    <span>Arrakis Sandstorm Engine</span>' +
-            '    <span id="storm-hud-mode" style="color:#6d533c;">OFFLINE</span>' +
+            '    <span>Maverick Tactical Haboob</span>' +
+            '    <span id="storm-hud-mode" style="color:#505050;">OFFLINE</span>' +
             '</div>' +
             '<div id="geofs-storm-core">' +
             '    <div id="storm-tier-selector">' +
@@ -403,31 +386,31 @@
             '        <button class="storm-tier-btn" data-tier="4">V</button>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Severity Profile</span>' +
-            '        <span class="storm-data" id="storm-out-tier" style="color:#e99937;">Tier II: Desert Squall</span>' +
+            '        <span class="storm-tag">Tactical Profile</span>' +
+            '        <span class="storm-data" id="storm-out-tier" style="color:#d89849;">Tier II: Desert Squall</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Disaster Status</span>' +
+            '        <span class="storm-tag">System Status</span>' +
             '        <span class="storm-data" id="storm-out-dist">STANDBY</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Optical Clarity</span>' +
+            '        <span class="storm-tag">Visual Horizon</span>' +
             '        <span class="storm-data" id="storm-out-vis">100% (---)</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Turbulent Gusts</span>' +
+            '        <span class="storm-tag">Frontal Winds</span>' +
             '        <span class="storm-data" id="storm-out-wind">---</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Sand Rain Cascade</span>' +
+            '        <span class="storm-tag">Sand Cascade</span>' +
             '        <span class="storm-data" id="storm-out-sandrain">0%</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Airframe G-Load</span>' +
+            '        <span class="storm-tag">Airframe Loading</span>' +
             '        <span class="storm-data" id="storm-out-gload">+1.00 G</span>' +
             '    </div>' +
             '    <div class="storm-row">' +
-            '        <span class="storm-tag">Windshield Moisture</span>' +
+            '        <span class="storm-tag">Canopy Streaks</span>' +
             '        <span class="storm-data" id="storm-out-water">0%</span>' +
             '    </div>' +
             '    <div id="geofs-storm-btns">' +
@@ -609,7 +592,7 @@
             sandX[i] = Math.random() * w;
             sandY[i] = Math.random() * h;
             sandZ[i] = 0.15 + Math.random() * 0.85;
-            sandSize[i] = (0.75 + Math.random() * 2.4) * sandZ[i];
+            sandSize[i] = (0.65 + Math.random() * 2.0) * sandZ[i];
             sandType[i] = Math.random() > 0.82 ? 2 : (Math.random() > 0.38 ? 1 : 0);
             sandLife[i] = Math.random() * 200;
             sandMaxLife[i] = 120 + Math.random() * 260;
@@ -618,16 +601,15 @@
         for (var j = 0; j < SAND_RAIN_COUNT; j++) {
             rainX[j] = Math.random() * w;
             rainY[j] = Math.random() * h;
-            rainLen[j] = 14.0 + Math.random() * 32.0;
-            rainSpeed[j] = 18.0 + Math.random() * 24.0;
-            rainAlpha[j] = 0.25 + Math.random() * 0.55;
-            rainWidth[j] = 1.0 + Math.random() * 1.8;
+            rainLen[j] = 12.0 + Math.random() * 28.0;
+            rainSpeed[j] = 18.0 + Math.random() * 22.0;
+            rainWidth[j] = 0.85 + Math.random() * 1.5;
         }
 
         for (var k = 0; k < WATER_COUNT; k++) {
             waterX[k] = Math.random() * w;
             waterY[k] = Math.random() * h;
-            waterRadius[k] = 1.5 + Math.random() * 3.8;
+            waterRadius[k] = 1.2 + Math.random() * 3.2;
             waterActive[k] = Math.random() > 0.4 ? 1 : 0;
         }
     }
@@ -830,7 +812,7 @@
                 length: 7500.0,
                 topRadius: 21000.0,
                 bottomRadius: 15000.0,
-                material: new Cesium.Color(0.82, 0.58, 0.30, 0.92),
+                material: new Cesium.Color(0.48, 0.35, 0.22, 0.94),
                 slices: 64
             }
         });
@@ -860,21 +842,21 @@
         scene.fog.enabled = true;
         scene.fog.density = tier.fogDensity;
         scene.fog.screenSpaceErrorFactor = 1.4;
-        scene.fog.minimumBrightness = 0.85;
+        scene.fog.minimumBrightness = 0.28;
 
-        scene.globe.atmosphereHueShift = 0.05;
-        scene.globe.atmosphereSaturationShift = 0.65;
-        scene.globe.atmosphereBrightnessShift = 0.18;
-        scene.globe.baseColor = Cesium.Color.fromCssColorString('rgb(215, 148, 72)');
+        scene.globe.atmosphereHueShift = 0.04;
+        scene.globe.atmosphereSaturationShift = 0.35;
+        scene.globe.atmosphereBrightnessShift = -0.22;
+        scene.globe.baseColor = Cesium.Color.fromCssColorString('rgb(85, 62, 42)');
 
         if (scene.light) {
-            scene.light.color = Cesium.Color.fromCssColorString('rgb(245, 195, 128)');
+            scene.light.color = Cesium.Color.fromCssColorString('rgb(220, 165, 110)');
         }
 
         if (scene.skyAtmosphere) {
-            scene.skyAtmosphere.hueShift = 0.05;
-            scene.skyAtmosphere.saturationShift = 0.70;
-            scene.skyAtmosphere.brightnessShift = 0.20;
+            scene.skyAtmosphere.hueShift = 0.04;
+            scene.skyAtmosphere.saturationShift = 0.40;
+            scene.skyAtmosphere.brightnessShift = -0.25;
         }
 
         var shaderGLSL =
@@ -884,12 +866,18 @@
             'void main(void) {' +
             '    vec2 uv = v_textureCoordinates;' +
             '    vec4 sceneColor = texture2D(colorTexture, uv);' +
-            '    float grain = fract(sin(dot(uv * 1000.0 + fract(u_time * 19.0), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;' +
-            '    float luma = dot(sceneColor.rgb, vec3(0.299, 0.587, 0.114));' +
-            '    vec3 sandTint = vec3(0.82, 0.58, 0.30);' +
-            '    vec3 sandHaze = luma * sandTint * 1.35 + vec3(0.24, 0.15, 0.06);' +
-            '    vec3 graded = mix(sceneColor.rgb, sandHaze, 0.88);' +
-            '    graded += vec3(grain * 0.05);' +
+            '    vec3 c = sceneColor.rgb;' +
+            '    c = c * c * (3.0 - 2.0 * c);' +
+            '    c *= 0.74;' +
+            '    float luma = dot(c, vec3(0.299, 0.587, 0.114));' +
+            '    vec3 shadowCool = c * vec3(0.88, 0.92, 0.96);' +
+            '    vec3 warmAmber = c * vec3(1.24, 0.96, 0.72) + vec3(0.06, 0.038, 0.016);' +
+            '    vec3 graded = mix(shadowCool, warmAmber, clamp(luma * 1.35, 0.0, 1.0));' +
+            '    vec2 d = (uv - 0.5) * 1.35;' +
+            '    float vig = clamp(1.0 - dot(d, d) * 0.42, 0.0, 1.0);' +
+            '    graded *= vig;' +
+            '    float grain = (fract(sin(dot(uv * 1200.0 + fract(u_time * 11.0), vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.014;' +
+            '    graded += grain;' +
             '    gl_FragColor = vec4(clamp(graded, 0.0, 1.0), sceneColor.a);' +
             '}';
 
@@ -925,11 +913,11 @@
                 : 0;
 
             var speedRatio = Math.max(0.3, airspeed / 180.0);
-            var baseStreak = 6.0 + speedRatio * 44.0;
-            var lateralDrift = speedRatio * 26.0 + 4.0;
+            var baseStreak = 6.0 + speedRatio * 40.0;
+            var lateralDrift = speedRatio * 24.0 + 3.5;
 
             var rainFactor = tier.sandRainDensity;
-            overlayCtx.strokeStyle = 'rgba(185, 122, 54, ' + (0.60 * rainFactor) + ')';
+            overlayCtx.strokeStyle = 'rgba(125, 82, 40, ' + (0.42 * rainFactor) + ')';
             overlayCtx.beginPath();
             for (var rIdx = 0; rIdx < SAND_RAIN_COUNT; rIdx++) {
                 rainY[rIdx] += rainSpeed[rIdx] * (1.0 + speedRatio * 1.8);
@@ -947,7 +935,7 @@
             }
             overlayCtx.stroke();
 
-            overlayCtx.fillStyle = 'rgba(195, 130, 58, 0.65)';
+            overlayCtx.fillStyle = 'rgba(145, 98, 52, 0.45)';
             overlayCtx.beginPath();
             for (var i = 0; i < SAND_COUNT; i++) {
                 sandLife[i]++;
@@ -968,8 +956,8 @@
             }
             overlayCtx.fill();
 
-            overlayCtx.strokeStyle = 'rgba(210, 145, 70, 0.65)';
-            overlayCtx.lineWidth = 1.9;
+            overlayCtx.strokeStyle = 'rgba(165, 115, 62, 0.48)';
+            overlayCtx.lineWidth = 1.8;
             overlayCtx.beginPath();
             for (var j = 0; j < SAND_COUNT; j++) {
                 if (sandType[j] === 1) {
@@ -980,18 +968,18 @@
             }
             overlayCtx.stroke();
 
-            overlayCtx.fillStyle = 'rgba(155, 96, 38, 0.75)';
+            overlayCtx.fillStyle = 'rgba(110, 72, 36, 0.55)';
             for (var k = 0; k < SAND_COUNT; k++) {
                 if (sandType[k] === 2) {
-                    overlayCtx.fillRect(sandX[k], sandY[k], sandSize[k] * 2.4, sandSize[k] * 1.6);
+                    overlayCtx.fillRect(sandX[k], sandY[k], sandSize[k] * 2.2, sandSize[k] * 1.5);
                 }
             }
 
             var waterAirInfluence = (airspeed / 160.0) * tier.waterIntensity;
             if (waterAirInfluence > 0.005) {
-                overlayCtx.fillStyle = 'rgba(215, 175, 130, 0.45)';
-                overlayCtx.strokeStyle = 'rgba(225, 185, 140, 0.55)';
-                overlayCtx.lineWidth = 2.0;
+                overlayCtx.fillStyle = 'rgba(180, 195, 210, 0.35)';
+                overlayCtx.strokeStyle = 'rgba(195, 210, 225, 0.45)';
+                overlayCtx.lineWidth = 1.8;
 
                 overlayCtx.beginPath();
                 for (var m = 0; m < WATER_COUNT; m++) {
@@ -1003,7 +991,7 @@
                         waterY[m] += flowY;
 
                         var r = waterRadius[m];
-                        var streak = waterAirInfluence * 20.0;
+                        var streak = waterAirInfluence * 19.0;
 
                         if (waterX[m] < -50 || waterY[m] > h + 50) {
                             waterX[m] = Math.random() * (w * 1.1);
@@ -1066,8 +1054,6 @@
             ? geofs.animation.values.airspeed
             : 120.0;
 
-        stormState.sandAccumulation = Math.min(1.0, stormState.sandAccumulation + dt * 0.08);
-
         var timeSec = (now - stormState.startTime) * 0.001;
         var aeroLoad = (Math.min(airspeed, 420.0) / 110.0) * currentTier.turbulenceLoad;
 
@@ -1118,14 +1104,6 @@
             var uiShakeY = (Math.random() - 0.5) * uiShakePixels;
             var uiRot = (Math.random() - 0.5) * (currentTier.shakeScale * 0.35);
             hudElements.container.style.transform = 'translate3d(' + uiShakeX.toFixed(2) + 'px, ' + uiShakeY.toFixed(2) + 'px, 0px) rotate(' + uiRot.toFixed(2) + 'deg)';
-
-            var accum = stormState.sandAccumulation;
-            var borderR = Math.round(56 + accum * 120);
-            var borderG = Math.round(39 + accum * 75);
-            var borderB = Math.round(24 + accum * 20);
-            hudElements.container.style.borderColor = 'rgba(' + borderR + ',' + borderG + ',' + borderB + ', 0.9)';
-            hudElements.container.style.boxShadow = '0 20px 60px rgba(0,0,0,0.95), inset 0 0 ' + Math.round(accum * 30) + 'px rgba(205, 138, 52, ' + (accum * 0.4).toFixed(2) + ')';
-            hudElements.container.classList.add('sand-coated');
         }
     }
 
@@ -1137,7 +1115,6 @@
         stormState.headingRad = horizonPos.headingRad;
         stormState.startTime = Date.now();
         stormState.lastUpdateTime = Date.now();
-        stormState.sandAccumulation = 0;
         stormState.active = true;
 
         spawn3DModel(horizonPos);
@@ -1147,13 +1124,12 @@
         geofs.api.addFrameCallback(updatePhysicsFrame, 'geofs_haboob_sim');
 
         hudElements.statusVal.textContent = 'ONLINE (LOCKED)';
-        hudElements.statusVal.style.color = '#ffa138';
+        hudElements.statusVal.style.color = '#d89849';
         hudElements.startBtn.classList.add('active');
     }
 
     function stopDisaster() {
         stormState.active = false;
-        stormState.sandAccumulation = 0;
 
         geofs.api.removeFrameCallback('geofs_haboob_sim');
 
@@ -1210,11 +1186,8 @@
         }
 
         hudElements.container.style.transform = 'none';
-        hudElements.container.classList.remove('sand-coated');
-        hudElements.container.style.borderColor = '#382718';
-        hudElements.container.style.boxShadow = '0 20px 60px rgba(0,0,0,0.95)';
         hudElements.statusVal.textContent = 'OFFLINE';
-        hudElements.statusVal.style.color = '#6d533c';
+        hudElements.statusVal.style.color = '#505050';
         hudElements.distanceVal.textContent = 'STANDBY';
         hudElements.visibilityVal.textContent = '100% (---)';
         hudElements.windVal.textContent = '---';
